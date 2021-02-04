@@ -1016,6 +1016,25 @@ def load_minigraph(no_service_restart):
 
 
 #
+# 'tx_monitor' command
+# config tx_monitor Default_PoolingPeriod 60
+# config tx_monitor Default_Threshold 10
+#
+@config.command("tx_monitor")
+@click.argument('param', required=True)
+@click.argument('value', required=True)
+def txmonitor_set(param, value):
+    if param.lower() != 'threshold' and param.lower() != 'pooling_period':
+        click.echo("Please enter valid configurations")
+    else:
+        table_name = "TX_MONITOR"
+        config_db = ConfigDBConnector()
+        config_db.connect()
+        click.echo(param)
+        config_db.set_entry(table_name, param, {"Value":value})
+
+
+#
 # 'hostname' command
 #
 @config.command('hostname')
@@ -2350,6 +2369,7 @@ def unbind(ctx, interface_name):
     for interface_del in interface_dependent:
         config_db.set_entry(table_name, interface_del, None)
     config_db.set_entry(table_name, interface_name, None)
+
 
 
 #

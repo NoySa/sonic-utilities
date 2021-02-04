@@ -2543,6 +2543,67 @@ def config(redis_unix_socket_path):
     click.echo(tabulate(tablelize(keys, data, enable_table_keys, prefix), header))
     state_db.close(state_db.STATE_DB)
 
+
+#
+# 'tx_monitor' group ("show tx_monitor ...")
+#
+
+@cli.group(cls=AliasedGroup, default_if_no_args=False)
+def tx_monitor():
+    """Show configuration and state of tx monitor"""
+    pass
+
+
+# show monitor_tx tx_config
+@tx_monitor.command()
+def tx_config():
+    """See configurations"""
+    config_db = ConfigDBConnector()
+    config_db.connect()
+    data = config_db.get_table('TX_MONITOR')
+
+    for param in data:
+        value = data[param]['Value']
+        if param.lower().endswith('period'):
+            conf = 'Pooling_Period'
+        else:
+            conf = 'Threshold'
+
+        click.echo('%s value is %s' % (conf, value))
+
+
+#show monitor_tx tx_state
+@tx_monitor.command()
+def tx_state():
+    """Show ports tx-state"""
+
+    db = SonicV2Connector(host='127.0.0.1')
+    db.connect(db.STATE_DB, False)   # Make one attempt only
+
+    TABLE_NAME_SEPARATOR = '|'
+    prefix = 'PORT_TX_STATE_TABLE' + TABLE_NAME_SEPARATOR
+    _hash = '{}{}'.format(prefix, '*')
+    table_keys = db.keys(db.STATE_DB, _hash)
+    
+    def remove_prefix(text, prefix):
+        if text.startswith(prefix):
+            return text[len(prefix):]
+        return text
+    
+    state_list = []
+    for key in sorted(table_keys):
+        curr_state = db.get(db.STATE_DB, key, 'Value')
+        key = remove_prefix(key, prefix)
+        state_list.append([key, curr_state])
+
+    header = ['Port', 'State']
+    if not state_list:
+        click.echo("State list is empty.")
+    else:
+        click.echo(tabulate(state_list, headers=header))
+    db.close(db.STATE_DB)
+
+
 #
 # 'nat' group ("show nat ...")
 #
